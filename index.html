@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PALVEG 2.0 - Comparison of proxy- and model-based forest-cover reconstructions for the late Pleistocene (70-20 ka BP)</title>
+<link rel="icon" href="data:,">
+<script src="assets/vendor/jquery-3.7.1/jquery.min.js"></script>
+<link rel="stylesheet" href="assets/vendor/shiny-css-1.14.0/shiny.min.css">
+<script src="assets/vendor/ionrangeslider-javascript-2.3.1/js/ion.rangeSlider.min.js"></script>
+<script src="assets/vendor/strftime-0.9.2/strftime-min.js"></script>
+<link rel="stylesheet" href="assets/vendor/ionrangeslider-css-2.3.1/css/ion.rangeSlider.css">
+<link rel="stylesheet" href="assets/vendor/selectize-0.15.2/css/selectize.bootstrap3.css">
+<script src="assets/vendor/selectize-0.15.2/js/selectize.min.js"></script>
+<script src="assets/vendor/selectize-0.15.2/accessibility/js/selectize-plugin-a11y.min.js"></script>
+<link rel="stylesheet" href="assets/vendor/htmltools-fill-0.5.9/fill.css">
+<script src="assets/vendor/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+<link rel="stylesheet" href="assets/vendor/leaflet-1.3.1/leaflet.css">
+<script src="assets/vendor/leaflet-1.3.1/leaflet.js"></script>
+<link rel="stylesheet" href="assets/vendor/leafletfix-1.0.0/leafletfix.css">
+<script src="assets/vendor/proj4-2.6.2/proj4.min.js"></script>
+<script src="assets/vendor/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link rel="stylesheet" href="assets/vendor/rstudio_leaflet-1.3.1/rstudio_leaflet.css">
+<script src="assets/vendor/leaflet-binding-2.2.3/leaflet.js"></script>
+<link rel="stylesheet" href="assets/vendor/bootstrap-3.4.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="assets/vendor/bootstrap-3.4.1/accessibility/css/bootstrap-accessibility.min.css">
+<script src="assets/vendor/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script src="assets/vendor/bootstrap-3.4.1/accessibility/js/bootstrap-accessibility.min.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+  <div class="container-fluid">
+    <h2>PALVEG 2.0 - Comparison of proxy- and model-based forest-cover reconstructions for the late Pleistocene (70-20 ka BP)</h2>
+    <div class="row">
+      <div class="col-sm-3">
+        <form class="well" role="complementary">
+          <h5><b>Time interval options (time 1)</b> <br><br>Define time interval (in years before present)</h5>
+          <div class="form-group shiny-input-container">
+            <label class="control-label shiny-label-null" for="age" id="age-label"></label>
+            <input class="js-range-slider" id="age" data-skin="shiny" data-min="20000" data-max="70000" data-from="20000" data-step="2000" data-grid="true" data-grid-num="8.33333333333333" data-grid-snap="false" data-prettify-separator="," data-prettify-enabled="true" data-keyboard="true" data-data-type="number"/>
+          </div>
+          <h5><b>Reconstruction method</b> <br><br>
+                             - REVEALS land-cover estimates (after Sugita et al., 2007) <br><br> 
+                             - PaleoVeg vegetation model (after Shao et al., 2018) <br><br> 
+                             - Biomisation (after Prentice at al., 1996) <br> <br> 
+                             - JSBACH (vegetation component of MPI-ESM1.2; Duque-Villegas et al., 2025)</h5>
+          <div class="shiny-input-panel">
+            <div class="shiny-flow-layout">
+              <div>
+                <div class="form-group shiny-input-container">
+                  <label class="control-label shiny-label-null" for="data" id="data-label"></label>
+                  <div>
+                    <select id="data" class="shiny-input-select"><option value="REVEALS" selected>REVEALS</option>
+<option value="PaleoVeg">PaleoVeg</option>
+<option value="Biomisation">Biomisation</option>
+<option value="JSBACH">JSBACH</option></select>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h5><br><b>Mode options</b><br><br>
+                              - Standardized data (Z-score transformed; limited to -2 to +2 for visibility)<br><br>
+                              - Absolute forest cover [%] (interpret with caution; see manuscrip for details)<br><br>
+                              - Forest-cover anomaly [%] between two time steps<br>
+                              &emsp;&emsp;values shown as:<br> forest cover % (time 1, selected at thetop) - forest cover % (time 2, selected at bottom)
+                              </h5>
+          <div class="shiny-input-panel">
+            <div class="shiny-flow-layout">
+              <div>
+                <div class="form-group shiny-input-container">
+                  <label class="control-label shiny-label-null" for="scale" id="scale-label"></label>
+                  <div>
+                    <select id="scale" class="shiny-input-select"><option value="standardized (Z-scores)" selected>standardized (Z-scores)</option>
+<option value="absolute forest cover">absolute forest cover</option>
+<option value="forest-cover anomaly">forest-cover anomaly</option></select>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h5><b>Time interval options (time 2; only if mode: forest-cover anomaly is selected</b> 
+                              <br><br>Define reference time interval (in years before present)</h5>
+          <div class="form-group shiny-input-container">
+            <label class="control-label shiny-label-null" for="age2" id="age2-label"></label>
+            <input class="js-range-slider" id="age2" data-skin="shiny" data-min="20000" data-max="70000" data-from="20000" data-step="2000" data-grid="true" data-grid-num="8.33333333333333" data-grid-snap="false" data-prettify-separator="," data-prettify-enabled="true" data-keyboard="true" data-data-type="number"/>
+          </div>
+          <div style="&#10;            font-size: 12px;&#10;            color: grey;&#10;            line-height: 1.3;&#10;            margin-top: 160px;&#10;            padding: 6px;&#10;            border: 1px solid #ccc;&#10;            border-radius: 4px;&#10;            background: #f9f9f9;&#10;        ">
+            <b>Changelog</b>
+            <br/>
+            v1.2 – optimised for faster plotting
+            <br/>
+            v1.1 – changed Z-Score scaling
+            <br/>
+            v1.0 – Initial release
+          </div>
+        </form>
+      </div>
+      <div class="col-sm-8" role="main">
+        <div class="leaflet html-widget html-fill-item" id="map" style="width:1400px;height:1000px;"></div>
+        <div class="shiny-plot-output html-fill-item" id="distPlot" style="width:100%;height:400px;"></div>
+        <h5 style="text-align:right; color:grey">Kern, O.A., Dallmeyer, A., Maier, A., Schlüter, P., Vogel, A., Vercauteren, N.:<br>
+                        <b>Forest or tundra? How different vegetation reconstructions of Last Glacial landscapes<br> in Europe may shape our perception of early human dispersal processes</b><br>
+                        <i style='white-space: nowrap;'>(in review)</i><br><br>
+                            Contact: oliver.kern@uit.no</h5>
+      </div>
+    </div>
+  </div>
+
+<p id="status" role="status" hidden></p>
+</body>
+</html>
