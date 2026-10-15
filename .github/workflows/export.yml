@@ -1,0 +1,68 @@
+name: Export original layers and deploy
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: palveg-export
+  cancel-in-progress: false
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install export tools
+        run: |
+          pip install playwright==1.64.0
+          python -m playwright install --with-deps chromium
+      - name: Resume original layer export
+        id: export
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if python -u scripts/export_layers.py; then
+              exit 0
+            fi
+            echo "Source service interrupted export; retrying attempt $attempt. Completed files are retained."
+            sleep 10
+          done
+          exit 1
+      - name: Write export checkpoint
+        run: python scripts/write_manifest.py
+      - name: Save exported static files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/data
+          if ! git diff --cached --quiet; then
+            git commit -m 'Export original PALVEG layer snapshots'
+            git push
+          fi
+      - name: Verify complete scenario matrix
+        run: python scripts/check.py
+      - name: Check browser interactions
+        run: |
+          python -m http.server 4174 > /tmp/palveg-http.log 2>&1 &
+          python scripts/browser_check.py > /tmp/palveg-browser-report.json
+          cat /tmp/palveg-browser-report.json
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Prepare static files
+        run: |
+          mkdir _site
+          cp index.html app.js .nojekyll _site/
+          cp -r assets _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - uses: actions/deploy-pages@v4
+        id: deployment

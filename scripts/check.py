@@ -3,6 +3,7 @@ from pathlib import Path
 import gzip
 import hashlib
 import json
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'assets/data'
@@ -28,6 +29,9 @@ def main():
                     value = json.loads(gzip.decompress(data))
                     assert value['fitBounds'][:4] == [30.5, -5.5, 60.5, 40.5], key
                     assert value['options']['crs']['crsClass'] == 'L.CRS.EPSG3857', key
+                    legend = next(c['args'][0] for c in value['calls'] if c['method'] == 'addLegend')
+                    dates = [int(n) for n in re.findall(r'(\d+) ka BP', legend['title'])]
+                    assert dates == ([age // 1000, reference // 1000] if reference else [age // 1000]), (key, dates)
                     methods = {call['method'] for call in value['calls']}
                     assert methods <= ALLOWED, (key, methods)
                     assert {'addPolygons', 'addLegend', 'addControl'} <= methods, key
