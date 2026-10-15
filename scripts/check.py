@@ -14,7 +14,7 @@ ALLOWED = {'createMapPane', 'addRasterImage', 'addPolygons', 'addCircleMarkers',
 def main():
     manifest = json.loads((DATA / 'manifest.json').read_text())
     records = {r['key']: r for r in manifest['scenarios']}
-    assert len(records) == 2912, len(records)
+    assert len(records) == 2912, f'Export incomplete: {len(records)}/2912 maps saved; {2912-len(records)} remaining. Resume the export workflow; completed files are retained.'
     world = json.loads((DATA / 'world.json').read_text())
     assert world, 'Empty basemap'
     count = 0

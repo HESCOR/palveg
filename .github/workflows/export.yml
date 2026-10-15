@@ -28,12 +28,13 @@ jobs:
         id: export
         continue-on-error: true
         run: |
-          for attempt in 1 2 3 4 5; do
+          for attempt in $(seq 1 20); do
             if python -u scripts/export_layers.py; then
               exit 0
             fi
-            echo "Source service interrupted export; retrying attempt $attempt. Completed files are retained."
-            sleep 10
+            echo "::warning::Source service interrupted export (attempt $attempt/20). Completed files are retained."
+            python scripts/write_manifest.py
+            sleep 30
           done
           exit 1
       - name: Write export checkpoint
@@ -47,6 +48,15 @@ jobs:
             git commit -m 'Export original PALVEG layer snapshots'
             git push
           fi
+      - name: Report saved export progress
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          data = json.load(open("assets/data/manifest.json"))
+          count = len(data["scenarios"])
+          print(f"Saved {count}/2912 original maps ({2912-count} remaining).")
+          print("Completed files are committed and reused on the next run.")
+          PY
       - name: Verify complete scenario matrix
         run: python scripts/check.py
       - name: Check browser interactions
