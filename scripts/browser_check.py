@@ -56,6 +56,14 @@ def main():
                 }''')
                 assert page.locator('.leaflet-popup-content').count() == 1, key
                 page.evaluate("HTMLWidgets.find('#map').getMap().closePopup()")
+        # The source's constant-zero numeric gradient contains NaN. Display
+        # its original colour and zero label without an invalid SVG gradient.
+        page.evaluate("$('#data')[0].selectize.setValue('REVEALS'); const slider=$('#age2').data('ionRangeSlider'); slider.update({from:20000}); slider.options.onChange(slider.result)")
+        page.wait_for_function('document.querySelector("#map").dataset.scenario === "REVEALS/anomaly-20000-20000"')
+        assert page.locator('.leaflet-bottom.leaflet-right .legend i').count() == 1
+        assert page.locator('.leaflet-bottom.leaflet-right .legend svg').count() == 0
+        page.evaluate("const slider=$('#age2').data('ionRangeSlider'); slider.update({from:70000}); slider.options.onChange(slider.result)")
+        page.wait_for_function('document.querySelector("#map").dataset.scenario === "REVEALS/anomaly-20000-70000"')
         zoom = page.evaluate("HTMLWidgets.find('#map').getMap().getZoom()")
         page.locator('.leaflet-control-zoom-in').click()
         page.wait_for_function('zoom => HTMLWidgets.find("#map").getMap().getZoom() === zoom + 1', arg=zoom)
@@ -86,11 +94,18 @@ def main():
         race.wait_for_function('document.querySelector("#map").dataset.scenario === "JSBACH/absolute-20000"')
         race.wait_for_timeout(700)
         assert race.locator('#map').get_attribute('data-scenario') == 'JSBACH/absolute-20000'
+        # Returning to the already displayed view must cancel an in-flight load.
+        race.evaluate("$('#data')[0].selectize.setValue('PaleoVeg')")
+        race.wait_for_function('document.querySelector("#map").getAttribute("aria-busy") === "true"')
+        race.evaluate("$('#data')[0].selectize.setValue('JSBACH')")
+        race.wait_for_function('document.querySelector("#map").getAttribute("aria-busy") !== "true"')
+        race.wait_for_timeout(700)
+        assert race.locator('#map').get_attribute('data-scenario') == 'JSBACH/absolute-20000'
         race.close()
         external = [url for url in requests if urlsplit(url).netloc != origin]
         assert not errors, errors
         assert not external, external
-        print(json.dumps({'scenarioTimings': timings, 'popupFidelity': 'passed', 'zoom': 'passed',
+        print(json.dumps({'scenarioTimings': timings, 'popupFidelity': 'passed', 'zeroAnomalyLegend': 'passed', 'zoom': 'passed',
                           'rapidSwitching': 'passed', 'staleResponseProtection': 'passed', 'javascriptErrors': errors, 'externalRequests': external}, indent=2))
         browser.close()
 

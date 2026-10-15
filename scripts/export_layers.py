@@ -64,6 +64,11 @@ def main():
     folder.mkdir(parents=True, exist_ok=True)
     done = sum((folder / (key(*job) + '.json.gz')).exists() for job in jobs())
     print(f'Starting at {done}/2912 exported scenarios', flush=True)
+    if done == 2912:
+        from write_manifest import main as write_manifest
+        write_manifest()
+        print('The complete matrix is already present; no source connection needed.', flush=True)
+        return
     started = time.monotonic()
     with sync_playwright() as playwright:
         options = {'headless': True}

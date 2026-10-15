@@ -37,9 +37,13 @@
     }
     const response = await fetch(`assets/data/${key}.json.gz`, {signal});
     if (!response.ok) throw new Error('The selected reconstruction could not be loaded. Please try again.');
-    // GitHub Pages serves .gz as a file. Decode the compact layer data locally.
-    const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
-    const value = await new Response(stream).json();
+    // Hosts may serve .gz verbatim or mark it with Content-Encoding: gzip,
+    // which fetch decodes automatically. Inspect the bytes to support both.
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const compressed = bytes[0] === 0x1f && bytes[1] === 0x8b;
+    const stream = new Blob([bytes]).stream();
+    const decoded = compressed ? stream.pipeThrough(new DecompressionStream('gzip')) : stream;
+    const value = await new Response(decoded).json();
     cache.set(key, value);
     if (cache.size > 12) cache.delete(cache.keys().next().value);
     return value;
@@ -55,9 +59,13 @@
 
   async function update() {
     const key = selectedKey();
-    if (key === activeKey) return;
     const current = ++generation;
     activeRequest?.abort();
+    if (key === activeKey) {
+      mapElement.removeAttribute('aria-busy');
+      status.hidden = true;
+      return;
+    }
     activeRequest = new AbortController();
     mapElement.setAttribute('aria-busy', 'true');
     status.hidden = true;
@@ -67,6 +75,18 @@
       const data = structuredClone(stored);
       for (const call of data.calls) {
         if (call.method === 'addPolygons' && call.args[0].$ref === 'world') call.args[0] = geometry;
+        if (call.method === 'addLegend') {
+          const legend = call.args[0];
+          // Same-date anomalies have one value (zero). The original numeric
+          // gradient divides by zero; use its exact colour as a single swatch.
+          if (legend.type === 'numeric' && legend.labels.length === 1) {
+            const colour = legend.colors[0]?.match(/#[0-9a-f]{6}/i)?.[0];
+            if (colour) {
+              legend.type = 'factor';
+              legend.colors = [colour];
+            }
+          }
+        }
       }
       // The original Leaflet renderer preserves map geometry, colours, legends,
       // popup text, projection, panes and fit bounds from the Shiny output.
@@ -78,22 +98,24 @@
     } catch (error) {
       if (current !== generation || error.name === 'AbortError') return;
       mapElement.removeAttribute('aria-busy');
-      status.textContent = `${error.message} Check your connection and change a control to retry.`;
+      status.textContent = activeKey
+        ? 'The selected reconstruction could not be loaded. The map still shows the previous selection. Check your connection and change a control to retry.'
+        : 'The map could not be loaded. Please check your connection and reload the page.';
       status.hidden = false;
       console.error(error);
     }
   }
 
-  function schedule() {
+  function schedule(delay = 120) {
     clearTimeout(timer);
-    timer = setTimeout(update, 120);
+    timer = setTimeout(update, delay);
   }
 
   $(() => {
     HTMLWidgets.staticRender();
     widget = HTMLWidgets.find('#map');
-    $('.js-range-slider').ionRangeSlider({onChange: schedule});
-    $('#data, #scale').selectize({plugins: ['selectize-plugin-a11y'], onChange: schedule});
+    $('.js-range-slider').ionRangeSlider({onChange: () => schedule()});
+    $('#data, #scale').selectize({plugins: ['selectize-plugin-a11y'], onChange: () => schedule(0)});
     update();
   });
 })();

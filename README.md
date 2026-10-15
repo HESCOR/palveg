@@ -16,7 +16,7 @@ Each scenario is an independently loaded, gzip-compressed JSON file containing t
 
 The scientific outputs are exported directly from the public app. Anomalies are not recomputed from rounded popup values, and colours are not inferred from screenshots. The original EPSG:3857 projection, layer ordering, raster sampling, opacity, popup strings, legend gradients, and fit bounds are preserved. The original page reserves an empty 400 px plot area; the running source app returned no plot there, so that space is retained.
 
-The existing Leaflet 1.3.1 canvas teardown is guarded against a pending animation callback during fast map changes. No vendored library code is modified.
+The existing Leaflet 1.3.1 canvas teardown is guarded against a pending animation callback during fast map changes. Constant-zero anomaly legends are displayed as a single swatch using the original colour, avoiding the source app’s `NaN` gradient. No vendored library code is modified.
 
 ## Local preview
 
@@ -47,6 +47,10 @@ python3 scripts/check.py
 ```
 
 The GitHub Pages workflow runs that check before publishing. It refuses to deploy an incomplete matrix.
+
+The manually triggered **Export original layers and deploy** workflow in `.github/workflows/export.yml` installs the browser tools, resumes the export, retries source-service interruptions, commits completed files, checks the full matrix and browser interactions, then publishes the static page. Later deployments of an already complete matrix use only static files and do not contact Shiny.
+
+See [VERIFICATION.md](VERIFICATION.md) for the visual comparison and browser checks.
 
 ## Attribution
 
